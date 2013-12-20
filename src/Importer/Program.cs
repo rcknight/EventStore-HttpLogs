@@ -112,7 +112,7 @@ namespace Importer
             var eventBytes = encoding.GetBytes(logRecord.ToString());
             var metaData = new byte[]{};
 
-            _connection.AppendToStreamAsync("logEvents", ExpectedVersion.Any, new EventData(Guid.NewGuid(), "LogRecord", true, eventBytes, metaData));
+            _connection.AppendToStream("logEvents3", ExpectedVersion.Any, new EventData(Guid.NewGuid(), "LogRecord", true, eventBytes, metaData));
         }
     }
 }
