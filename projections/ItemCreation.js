@@ -54,7 +54,7 @@ fromStream('logEvents').when({
 
 				//skip weird outliers over 10 mins
 				//they probably went for a cup of coffee
-				if(date - start > 10*60*1000)
+				if(date - start > 20*60*1000)
 				{
 					s.creates[user] = undefined;
 					s.clones[user] = undefined;

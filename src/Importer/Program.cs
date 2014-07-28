@@ -28,8 +28,8 @@ namespace Importer
                 try
                 {
                     var settings = ConnectionSettings.Create();
-                    var conn = EventStoreConnection.Create(settings, new IPEndPoint(IPAddress.Parse("172.16.1.34"), 1113));
-                    conn.Connect();
+                    var conn = EventStoreConnection.Create(settings, new IPEndPoint(IPAddress.Loopback, 1113));
+                    conn.ConnectAsync().Wait();
                     var processor = new LogProcessor(conn);
 
                     var totalLines = processor.ProcessLogs(query);
@@ -71,10 +71,10 @@ namespace Importer
             var lastFileName = "File Name";
             var lastFileResultCount = 0;
             var totalLines = 0;
+            var toWrite = new List<EventData>();
             foreach (var record in enumerableSet)
             {
                 totalLines++;
-
                 var result = new JObject();
                 for (int i = 0; i < columnCount; i++)
                 {
@@ -90,7 +90,11 @@ namespace Importer
                             }
                             else
                             {
-                                Console.WriteLine("File {0} - {1} entries", lastFileName, lastFileResultCount);
+                                _connection.AppendToStreamAsync("logEvents", ExpectedVersion.Any, toWrite).Wait();
+                                //toWrite.Clear();
+                                
+                                Console.WriteLine("File {0} - {1} entries", lastFileName, toWrite.Count);
+                                toWrite = new List<EventData>();
                                 lastFileName = value;
                                 lastFileResultCount = 1;
                             }
@@ -99,7 +103,7 @@ namespace Importer
                     }
                 }
 
-                SaveToEventStore(result);
+                toWrite.Add(ToEvent(result));
             }
 
             return totalLines;
@@ -107,12 +111,12 @@ namespace Importer
 
         private readonly Encoding encoding = Encoding.UTF8;
 
-        private void SaveToEventStore(JObject logRecord)
+        private EventData ToEvent(JObject logRecord)
         {
             var eventBytes = encoding.GetBytes(logRecord.ToString());
             var metaData = new byte[]{};
 
-            _connection.AppendToStream("logEvents3", ExpectedVersion.Any, new EventData(Guid.NewGuid(), "LogRecord", true, eventBytes, metaData));
+            return new EventData(Guid.NewGuid(), "LogRecord", true, eventBytes, metaData);
         }
     }
 }
